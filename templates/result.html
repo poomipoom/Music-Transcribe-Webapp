@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>วิดีโอพร้อมคำบรรยาย</title>
+    <style>
+        #subtitle {
+            margin-top: 15px;
+            background: #f1f1f1;
+            padding: 10px;
+            font-size: 18px;
+            border-radius: 8px;
+            white-space: pre-wrap;
+        }
+    </style>
+</head>
+<body>
+    <h2>วิดีโอจาก YouTube</h2>
+    <div id="player"></div>
+
+    <div id="subtitle">กำลังโหลดคำบรรยาย...</div>
+
+    <script>
+        let player;
+        let subtitles = [];
+        let subtitleInterval;
+
+        const videoId = "{{ video_id }}";
+        const vttPath = "{{ vtt_path }}";
+
+        function loadYouTubeAPI() {
+            return new Promise(resolve => {
+                if (window.YT && YT.Player) {
+                    resolve();
+                } else {
+                    const tag = document.createElement('script');
+                    tag.src = "https://www.youtube.com/iframe_api";
+                    const firstScriptTag = document.getElementsByTagName('script')[0];
+                    firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
+                    window.onYouTubeIframeAPIReady = () => resolve();
+                }
+            });
+        }
+
+        function createPlayer() {
+            if (player) {
+                player.destroy(); // เคลียร์ player เดิมก่อน
+            }
+
+            player = new YT.Player('player', {
+                height: '390',
+                width: '640',
+                videoId: videoId,
+                events: {
+                    'onReady': loadSubtitles,
+                    'onStateChange': onPlayerStateChange
+                }
+            });
+        }
+
+        function loadSubtitles() {
+            fetch(`/static/subtitles/${vttPath}`)
+                .then(res => res.text())
+                .then(text => {
+                    subtitles = parseVTT(text);
+                    updateSubtitleLoop();
+                });
+        }
+
+        function updateSubtitleLoop() {
+            if (subtitleInterval) clearInterval(subtitleInterval);
+
+            subtitleInterval = setInterval(() => {
+                const currentTime = player.getCurrentTime();
+                const current = subtitles.find(sub => currentTime >= sub.start && currentTime <= sub.end);
+                document.getElementById("subtitle").innerText = current ? current.text : "";
+            }, 500);
+        }
+
+        function onPlayerStateChange(event) {
+            if (event.data === YT.PlayerState.PLAYING) {
+                console.log("▶️ Player is playing");
+                updateSubtitleLoop();
+            }
+        }
+
+        function parseVTT(data) {
+            const entries = [];
+            const lines = data.split("\n");
+            let start = null, end = null, text = "";
+
+            for (let i = 0; i < lines.length; i++) {
+                const line = lines[i].trim();
+                if (line === "WEBVTT" || line === "" || /^\d+$/.test(line)) continue;
+                else if (line.includes("-->")) {
+                    const [startTime, endTime] = line.split(" --> ");
+                    start = parseTime(startTime.trim());
+                    end = parseTime(endTime.trim());
+                    text = "";
+                } else if (start !== null && end !== null) {
+                    if (text !== "") text += "\n";
+                    text += line;
+                    const nextLine = lines[i + 1] ? lines[i + 1].trim() : "";
+                    if (nextLine === "" || /^\d+$/.test(nextLine)) {
+                        entries.push({ start, end, text });
+                        start = null;
+                        end = null;
+                        text = "";
+                    }
+                }
+            }
+
+            return entries;
+        }
+
+        function parseTime(t) {
+            const [h, m, s] = t.replace(",", ".").split(":");
+            return parseInt(h) * 3600 + parseInt(m) * 60 + parseFloat(s);
+        }
+
+        // Start loading!
+        loadYouTubeAPI().then(createPlayer);
+    </script>
+</body>
+</html>

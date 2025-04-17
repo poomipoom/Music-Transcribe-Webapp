@@ -1,0 +1,10 @@
+Flask==2.3.3
+yt-dlp==2024.3.10
+whisper @ git+https://github.com/openai/whisper.git
+openai-whisper  # เผื่อใช้ติดตั้งผ่าน pip บางระบบ
+torch>=2.0.0     # หรือเวอร์ชันที่เข้ากับ GPU/CPU ของคุณ
+ffmpeg-python==0.2.0
+deep-translator==1.11.4
+numpy>=1.22.0
+tqdm>=4.64.0
+regex>=2022.10.31
