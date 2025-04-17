@@ -9,3 +9,7 @@ dowloads/*
 
 # IDE settings
 .vscode/
+
+!static/subtitles/.gitkeep
+
+!downloads/.gitkeep
