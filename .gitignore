@@ -12,4 +12,4 @@ dowloads/*
 
 !static/subtitles/.gitkeep
 
-!downloads/.gitkeep
+!dowloads/.gitkeep
