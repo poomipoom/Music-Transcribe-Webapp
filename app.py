@@ -4,6 +4,7 @@ from utils.speech_to_text import transcribe_audio
 from utils.translate_srt import translate_srt, srt_to_vtt
 from urllib.parse import urlparse, parse_qs
 import os
+import time
 
 app = Flask(__name__)
 
@@ -49,18 +50,32 @@ def index():
 
 @app.route("/process", methods=["POST"])
 def process():
+    
+# download
+    
+    # transcribe
+    
+    # translate
+    
 
     cleanup_mp3_files()
     cleanup_sub_files()
 
     url = request.form["youtube_url"]
     lang = request.form["target_lang"]
-
+    t1 = time.perf_counter()
     audio_path = download_audio(url)
+    t2 = time.perf_counter()
     srt_path = transcribe_audio(audio_path)
-
+    t3 = time.perf_counter()
+    if srt_path is None:
+        return "Error during transcription.", 500
     translated_srt_path = translate_srt(srt_path, lang)
+    t4 = time.perf_counter()
     vtt_path = srt_to_vtt(translated_srt_path)
+    print(f"⏱️ download: {t2 - t1:.2f}s")
+    print(f"⏱️ transcribe: {t3 - t2:.2f}s")
+    print(f"⏱️ translate: {t4 - t3:.2f}s")
 
     # Extract video ID
     # ดึง video_id จาก url เช่น https://www.youtube.com/watch?v=xxxx
